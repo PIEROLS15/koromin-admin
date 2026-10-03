@@ -17,3 +17,5 @@ export const createSaleSchema = z.object({
     }),
   ).min(1),
 });
+
+export type CreateSaleInput = z.infer<typeof createSaleSchema>;

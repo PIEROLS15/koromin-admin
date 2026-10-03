@@ -13,10 +13,10 @@ export async function resetTestDatabase() {
   await prisma.$transaction([
     prisma.saleItemUnit.deleteMany(),
     prisma.saleItem.deleteMany(),
+    prisma.expense.deleteMany(),
     prisma.sale.deleteMany(),
     prisma.inventoryUnit.deleteMany(),
     prisma.orderInvestment.deleteMany(),
-    prisma.expense.deleteMany(),
     prisma.orderItem.deleteMany(),
     prisma.order.deleteMany(),
     prisma.product.deleteMany(),
@@ -27,6 +27,7 @@ export async function resetTestDatabase() {
     prisma.customer.deleteMany(),
     prisma.session.deleteMany(),
     prisma.account.deleteMany(),
+    prisma.verificationToken.deleteMany(),
     prisma.user.deleteMany(),
   ]);
 }

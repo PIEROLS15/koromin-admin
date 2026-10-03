@@ -25,3 +25,5 @@ export const createOrderSchema = z.object({
     }),
   ).default([]),
 });
+
+export type CreateOrderInput = z.infer<typeof createOrderSchema>;

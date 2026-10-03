@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
+    "start": "node .next/standalone/server.js",
     "start:test": "dotenv -e .env.test -- node .next/standalone/server.js",
     "lint": "eslint",
     "test": "pnpm test:unit",

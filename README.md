@@ -59,6 +59,23 @@ pnpm prisma:migrate
 pnpm prisma:generate
 ```
 
+Si ya tienes una base local creada antes de usar migraciones, `migrate deploy` puede fallar con `P3005` porque la base no está vacía y no tiene historial en `_prisma_migrations`.
+
+Si puedes perder datos locales, recrea el volumen:
+
+```bash
+docker compose down
+docker volume rm koromin-admin_koromin_postgres_data
+docker compose up -d --build
+```
+
+Si necesitas conservar datos, marca la migración inicial como aplicada contra esa base:
+
+```bash
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/koromin?schema=public" pnpm prisma migrate resolve --applied 20261003000000_init
+docker compose restart app
+```
+
 ## Calidad
 
 ```bash

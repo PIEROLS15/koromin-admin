@@ -12,13 +12,11 @@ export async function createTestUser(overrides: Partial<{ email: string; role: "
 }
 
 export async function createCatalogFixture() {
-  const [supplier, customer, productType, franchise, category] = await Promise.all([
-    prisma.supplier.create({ data: { name: "Test Supplier" } }),
-    prisma.customer.create({ data: { name: "Test Customer" } }),
-    prisma.productType.create({ data: { name: "Manga", slug: `manga-${crypto.randomUUID()}` } }),
-    prisma.franchise.create({ data: { name: "Test Franchise" } }),
-    prisma.category.create({ data: { name: "Test Category" } }),
-  ]);
+  const supplier = await prisma.supplier.create({ data: { name: "Test Supplier" } });
+  const customer = await prisma.customer.create({ data: { name: "Test Customer" } });
+  const productType = await prisma.productType.create({ data: { name: "Manga", slug: `manga-${crypto.randomUUID()}` } });
+  const franchise = await prisma.franchise.create({ data: { name: "Test Franchise" } });
+  const category = await prisma.category.create({ data: { name: "Test Category" } });
 
   const product = await prisma.product.create({
     data: {

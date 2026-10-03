@@ -2,7 +2,6 @@
 
 import dynamic from "next/dynamic";
 
-import { DashboardRecentTables } from "@/components/dashboard/dashboard-recent-tables";
 import type { DashboardInventory, DashboardOrder, DashboardSale } from "@/lib/dashboard/types";
 
 const DashboardCharts = dynamic(() => import("@/components/dashboard/dashboard-charts").then((mod) => mod.DashboardCharts), {
@@ -20,7 +19,6 @@ export function DashboardClient({ sales, orders, inventory }: DashboardClientPro
   return (
     <>
       <DashboardCharts sales={sales} orders={orders} inventory={inventory} />
-      <DashboardRecentTables sales={sales} orders={orders} />
     </>
   );
 }

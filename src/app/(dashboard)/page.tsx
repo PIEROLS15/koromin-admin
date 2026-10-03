@@ -1,6 +1,7 @@
 import { Boxes, Coins, PackageCheck, Receipt, TrendingUp, Truck } from "lucide-react";
 
 import { DashboardClient } from "@/components/dashboard/dashboard-client";
+import { DashboardRecentTables } from "@/components/dashboard/dashboard-recent-tables";
 import { PageHeader } from "@/components/layout/page-header";
 import { StatCard } from "@/components/layout/stat-card";
 import { getDashboardData } from "@/server/dashboard/get-dashboard-data";
@@ -30,6 +31,7 @@ export default async function DashboardPage() {
         ))}
       </section>
       <DashboardClient sales={sales} orders={orders} inventory={inventory} />
+      <DashboardRecentTables sales={sales} orders={orders} />
     </>
   );
 }
