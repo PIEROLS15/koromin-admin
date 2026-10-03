@@ -1,13 +1,20 @@
-import { ModulePage } from "@/components/layout/module-page";
+import { requirePermission } from "@/lib/auth/guards";
+import { InventoryTable } from "@/components/inventory/inventory-table";
+import { PageHeader } from "@/components/layout/page-header";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { getInventoryUnitList } from "@/server/inventory/queries";
 
-export default function InventoryPage() {
+export default async function InventoryPage() {
+  await requirePermission("inventory.manage");
+  const units = await getInventoryUnitList();
+
   return (
-    <ModulePage
-      title="Inventario"
-      description="Unidades físicas con costo real, estado y origen de compra."
-      tableTitle="Unidades de inventario"
-      tableDescription="Cada fila representa una unidad física de InventoryUnit."
-      columns={["Producto", "Pedido", "Costo real", "Estado", "Creado"]}
-    />
+    <>
+      <PageHeader title="Inventario" description="Unidades físicas con costo real, estado y origen de compra." />
+      <Card>
+        <CardHeader><CardTitle>Unidades</CardTitle><CardDescription>Mostrando hasta 100 unidades recientes.</CardDescription></CardHeader>
+        <CardContent><InventoryTable units={units} /></CardContent>
+      </Card>
+    </>
   );
 }

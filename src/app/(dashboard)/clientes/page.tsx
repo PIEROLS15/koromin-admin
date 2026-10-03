@@ -1,14 +1,20 @@
-import { ModulePage } from "@/components/layout/module-page";
+import { requirePermission } from "@/lib/auth/guards";
+import { CustomersTable } from "@/components/catalogs/customers-table";
+import { PageHeader } from "@/components/layout/page-header";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { getCustomerList } from "@/server/catalogs/queries";
 
-export default function CustomersPage() {
+export default async function CustomersPage() {
+  await requirePermission("sales.manage");
+  const customers = await getCustomerList();
+
   return (
-    <ModulePage
-      title="Clientes"
-      description="Clientes requeridos para registrar cualquier venta."
-      tableTitle="Clientes"
-      tableDescription="También se podrán crear rápidamente desde el flujo de venta."
-      columns={["Nombre", "Contacto", "Ventas", "Creado"]}
-      createLabel="Nuevo cliente"
-    />
+    <>
+      <PageHeader title="Clientes" description="Clientes requeridos para registrar cualquier venta." />
+      <Card>
+        <CardHeader><CardTitle>Clientes</CardTitle><CardDescription>Mostrando hasta 100 clientes.</CardDescription></CardHeader>
+        <CardContent><CustomersTable customers={customers} /></CardContent>
+      </Card>
+    </>
   );
 }
