@@ -1,7 +1,6 @@
 services:
   db:
     image: postgres:17-bookworm
-    container_name: koromin-db
     restart: unless-stopped
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
@@ -21,7 +20,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: koromin-app
     restart: unless-stopped
     env_file:
       - .env
