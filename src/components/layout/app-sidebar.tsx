@@ -1,5 +1,6 @@
 "use client";
 
+import type { Role } from "@prisma/client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -17,30 +18,40 @@ import {
 } from "lucide-react";
 
 import { SignOutButton } from "@/components/layout/sign-out-button";
+import { can, type Permission } from "@/lib/permissions/permissions";
 import { cn } from "@/lib/utils";
 
-const operacion = [
+interface NavItem {
+  title: string;
+  url: string;
+  icon: React.ComponentType<{ className?: string }>;
+  permission?: Permission;
+}
+
+const operacion: NavItem[] = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
-  { title: "Pedidos", url: "/pedidos", icon: ShoppingCart },
-  { title: "Productos", url: "/productos", icon: PackageSearch },
-  { title: "Inventario", url: "/inventario", icon: Boxes },
-  { title: "Ventas", url: "/ventas", icon: Receipt },
-  { title: "Clientes", url: "/clientes", icon: Contact },
-] as const;
+  { title: "Pedidos", url: "/pedidos", icon: ShoppingCart, permission: "orders.manage" },
+  { title: "Productos", url: "/productos", icon: PackageSearch, permission: "products.manage" },
+  { title: "Inventario", url: "/inventario", icon: Boxes, permission: "inventory.manage" },
+  { title: "Ventas", url: "/ventas", icon: Receipt, permission: "sales.manage" },
+  { title: "Clientes", url: "/clientes", icon: Contact, permission: "sales.manage" },
+];
 
-const gestion = [
-  { title: "Animes / Categorías", url: "/animes", icon: Sparkles },
-  { title: "Proveedores", url: "/proveedores", icon: Truck },
-  { title: "Inversionistas", url: "/inversionistas", icon: Users },
-  { title: "Usuarios", url: "/usuarios", icon: ShieldCheck },
-  { title: "Finanzas", url: "/finanzas", icon: Wallet },
-] as const;
+const gestion: NavItem[] = [
+  { title: "Animes / Categorías", url: "/animes", icon: Sparkles, permission: "products.manage" },
+  { title: "Proveedores", url: "/proveedores", icon: Truck, permission: "orders.manage" },
+  { title: "Inversionistas", url: "/inversionistas", icon: Users, permission: "finance.view" },
+  { title: "Usuarios", url: "/usuarios", icon: ShieldCheck, permission: "users.manage" },
+  { title: "Finanzas", url: "/finanzas", icon: Wallet, permission: "finance.view" },
+];
 
-export function AppSidebar() {
+export function AppSidebar({ role }: { role: Role }) {
   const pathname = usePathname();
   const isActive = (url: string) => (url === "/" ? pathname === "/" : pathname.startsWith(url));
+  const visibleOperacion = operacion.filter((item) => !item.permission || can(role, item.permission));
+  const visibleGestion = gestion.filter((item) => !item.permission || can(role, item.permission));
 
-  const renderItems = (items: readonly (typeof operacion[number] | typeof gestion[number])[]) =>
+  const renderItems = (items: NavItem[]) =>
     items.map((item) => (
       <Link
         key={item.url}
@@ -69,11 +80,11 @@ export function AppSidebar() {
       <div className="space-y-5 overflow-y-auto">
         <nav className="space-y-1">
           <p className="px-3 pb-1 text-xs font-medium text-sidebar-foreground/70">Operación</p>
-          {renderItems(operacion)}
+          {renderItems(visibleOperacion)}
         </nav>
         <nav className="space-y-1">
           <p className="px-3 pb-1 text-xs font-medium text-sidebar-foreground/70">Gestión</p>
-          {renderItems(gestion)}
+          {renderItems(visibleGestion)}
         </nav>
       </div>
       <div className="mt-auto space-y-1 border-t border-sidebar-border pt-3">

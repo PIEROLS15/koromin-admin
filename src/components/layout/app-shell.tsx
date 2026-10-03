@@ -1,28 +1,17 @@
-import { getServerSession } from "next-auth";
-import { redirect } from "next/navigation";
 import { Bell } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { UserMenu } from "@/components/layout/user-menu";
 import { Button } from "@/components/ui/button";
-import { authOptions } from "@/lib/auth/options";
-import { prisma } from "@/lib/prisma/client";
+import { requireActiveUser } from "@/lib/auth/guards";
 
 export async function AppShell({ children }: { children: ReactNode }) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) redirect("/login");
-
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: { email: true, name: true, image: true },
-  });
-
-  if (!user) redirect("/login");
+  const user = await requireActiveUser();
 
   return (
     <div className="flex min-h-screen w-full bg-background">
-      <AppSidebar />
+      <AppSidebar role={user.role} />
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b bg-card/90 px-4 backdrop-blur">
           <div className="min-w-0">
