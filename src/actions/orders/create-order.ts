@@ -1,22 +1,19 @@
 "use server";
 
-import { getServerSession } from "next-auth";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 
-import { authOptions } from "@/lib/auth/options";
-import { can } from "@/lib/permissions/permissions";
+import { actionError, type ActionState } from "@/lib/actions/state";
+import { parseOrderFormData } from "@/actions/orders/form-data";
+import { requirePermission } from "@/lib/auth/guards";
+import { generateCode } from "@/lib/codes/generate-code";
 import { prisma } from "@/lib/prisma/client";
 import { createOrderSchema } from "@/lib/validations/orders";
 
 export async function createOrder(input: unknown) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user || !can(session.user.role, "orders.manage")) {
-    throw new Error("No autorizado");
-  }
-
+  const user = await requirePermission("orders.manage");
   const data = createOrderSchema.parse(input);
-  const count = await prisma.order.count();
-  const code = `PED-${String(count + 1).padStart(5, "0")}`;
+  const code = generateCode("PED");
 
   const order = await prisma.$transaction(async (tx) =>
     tx.order.create({
@@ -28,7 +25,7 @@ export async function createOrder(input: unknown) {
         deliveryCost: data.deliveryCost,
         otherCosts: data.otherCosts,
         observations: data.observations,
-        createdById: session.user.id,
+        createdById: user.id,
         items: {
           create: data.items.map((item) => ({
             productId: item.productId,
@@ -49,5 +46,16 @@ export async function createOrder(input: unknown) {
   );
 
   revalidatePath("/pedidos");
+  revalidatePath("/");
   return order;
+}
+
+export async function createOrderFormAction(_: ActionState, formData: FormData): Promise<ActionState> {
+  try {
+    await createOrder(parseOrderFormData(formData));
+  } catch (error) {
+    return actionError(error);
+  }
+
+  redirect("/pedidos");
 }

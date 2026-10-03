@@ -1,22 +1,19 @@
 "use server";
 
-import { getServerSession } from "next-auth";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 
-import { authOptions } from "@/lib/auth/options";
-import { can } from "@/lib/permissions/permissions";
+import { actionError, type ActionState } from "@/lib/actions/state";
+import { parseSaleFormData } from "@/actions/sales/form-data";
+import { requirePermission } from "@/lib/auth/guards";
+import { generateCode } from "@/lib/codes/generate-code";
 import { prisma } from "@/lib/prisma/client";
 import { createSaleSchema } from "@/lib/validations/sales";
 
 export async function createSale(input: unknown) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user || !can(session.user.role, "sales.manage")) {
-    throw new Error("No autorizado");
-  }
-
+  const user = await requirePermission("sales.manage");
   const data = createSaleSchema.parse(input);
-  const count = await prisma.sale.count();
-  const code = `VEN-${String(count + 1).padStart(5, "0")}`;
+  const code = generateCode("VEN");
 
   const sale = await prisma.$transaction(async (tx) => {
     const created = await tx.sale.create({
@@ -28,16 +25,20 @@ export async function createSale(input: unknown) {
         deliveryCharge: data.deliveryCharge,
         otherCharges: data.otherCharges,
         notes: data.notes,
-        createdById: session.user.id,
+        createdById: user.id,
       },
     });
 
     for (const line of data.lines) {
-      const units = await tx.inventoryUnit.findMany({
-        where: { productId: line.productId, status: "IN_STOCK" },
-        orderBy: { createdAt: "asc" },
-        take: line.quantity,
-      });
+      const units = await tx.$queryRaw<{ id: string }[]>`
+        SELECT id
+        FROM "InventoryUnit"
+        WHERE "productId" = ${line.productId}
+          AND status = 'IN_STOCK'::"InventoryStatus"
+        ORDER BY "createdAt" ASC
+        LIMIT ${line.quantity}
+        FOR UPDATE SKIP LOCKED
+      `;
       if (units.length < line.quantity) throw new Error("Stock insuficiente");
 
       const item = await tx.saleItem.create({
@@ -49,12 +50,14 @@ export async function createSale(input: unknown) {
         },
       });
 
+      const updated = await tx.inventoryUnit.updateMany({
+        where: { id: { in: units.map((unit) => unit.id) }, status: "IN_STOCK" },
+        data: { status: "SOLD" },
+      });
+      if (updated.count !== units.length) throw new Error("Stock insuficiente");
+
       await tx.saleItemUnit.createMany({
         data: units.map((unit) => ({ saleItemId: item.id, inventoryUnitId: unit.id })),
-      });
-      await tx.inventoryUnit.updateMany({
-        where: { id: { in: units.map((unit) => unit.id) } },
-        data: { status: "SOLD" },
       });
     }
 
@@ -63,5 +66,16 @@ export async function createSale(input: unknown) {
 
   revalidatePath("/ventas");
   revalidatePath("/inventario");
+  revalidatePath("/");
   return sale;
+}
+
+export async function createSaleFormAction(_: ActionState, formData: FormData): Promise<ActionState> {
+  try {
+    await createSale(parseSaleFormData(formData));
+  } catch (error) {
+    return actionError(error);
+  }
+
+  redirect("/ventas");
 }
