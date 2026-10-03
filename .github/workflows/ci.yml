@@ -8,6 +8,7 @@ on:
   pull_request:
 
 env:
+  DATABASE_URL: postgresql://postgres:postgres@localhost:5432/koromin_ci?schema=public
   NEXTAUTH_SECRET: test-secret-change-me
   GOOGLE_CLIENT_ID: test-client-id
   GOOGLE_CLIENT_SECRET: test-client-secret
