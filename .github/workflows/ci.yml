@@ -15,7 +15,7 @@ env:
 
 jobs:
   quality:
-    name: Quality
+    name: Lint / Prisma Validate
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -116,7 +116,7 @@ jobs:
         run: pnpm test:integration
 
   build:
-    name: Build
+    name: Next.js Build
     runs-on: ubuntu-latest
     env:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/koromin_build?schema=public
@@ -202,7 +202,7 @@ jobs:
         run: pnpm test:e2e
 
   docker:
-    name: Docker Build
+    name: Docker Image Build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
