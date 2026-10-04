@@ -11,7 +11,7 @@ export type Permission =
 const rolePermissions: Record<Role, Permission[]> = {
   ADMIN: ["orders.manage", "products.manage", "inventory.manage", "sales.manage", "finance.view", "users.manage"],
   SUPERVISOR: ["orders.manage", "products.manage", "inventory.manage", "sales.manage", "finance.view"],
-  VISITOR: ["finance.view"],
+  VISITOR: [],
 };
 
 export function can(role: Role, permission: Permission) {

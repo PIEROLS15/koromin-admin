@@ -1,3 +1,10 @@
-export function GET() {
-  return Response.json({ status: "ok" });
+import { prisma } from "@/lib/prisma/client";
+
+export async function GET() {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    return Response.json({ status: "ok", database: "ok" });
+  } catch {
+    return Response.json({ status: "error", database: "down" }, { status: 503 });
+  }
 }

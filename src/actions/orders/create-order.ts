@@ -1,53 +1,30 @@
 "use server";
 
-import { getServerSession } from "next-auth";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 
-import { authOptions } from "@/lib/auth/options";
-import { can } from "@/lib/permissions/permissions";
-import { prisma } from "@/lib/prisma/client";
+import { actionError, type ActionState } from "@/lib/actions/state";
+import { parseOrderFormData } from "@/actions/orders/form-data";
+import { requirePermission } from "@/lib/auth/guards";
 import { createOrderSchema } from "@/lib/validations/orders";
+import { createOrderUseCase } from "@/server/orders/create-order";
 
 export async function createOrder(input: unknown) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user || !can(session.user.role, "orders.manage")) {
-    throw new Error("No autorizado");
-  }
-
+  const user = await requirePermission("orders.manage");
   const data = createOrderSchema.parse(input);
-  const count = await prisma.order.count();
-  const code = `PED-${String(count + 1).padStart(5, "0")}`;
-
-  const order = await prisma.$transaction(async (tx) =>
-    tx.order.create({
-      data: {
-        code,
-        supplierId: data.supplierId,
-        orderDate: data.orderDate,
-        estimatedArrivalDate: data.estimatedArrivalDate,
-        deliveryCost: data.deliveryCost,
-        otherCosts: data.otherCosts,
-        observations: data.observations,
-        createdById: session.user.id,
-        items: {
-          create: data.items.map((item) => ({
-            productId: item.productId,
-            quantity: item.quantity,
-            unitPurchaseCost: item.unitPurchaseCost,
-          })),
-        },
-        investments: {
-          create: data.investments.map((investment) => ({
-            userId: investment.userId,
-            amount: investment.amount,
-            contributionDate: investment.contributionDate,
-            notes: investment.notes,
-          })),
-        },
-      },
-    }),
-  );
+  const order = await createOrderUseCase({ input: data, userId: user.id });
 
   revalidatePath("/pedidos");
+  revalidatePath("/");
   return order;
+}
+
+export async function createOrderFormAction(_: ActionState, formData: FormData): Promise<ActionState> {
+  try {
+    await createOrder(parseOrderFormData(formData));
+  } catch (error) {
+    return actionError(error);
+  }
+
+  redirect("/pedidos");
 }
