@@ -1,7 +1,14 @@
+import { getServerSession } from "next-auth";
+import { redirect } from "next/navigation";
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { authOptions } from "@/lib/auth/options";
 import { GoogleSignInButton } from "./sign-in-button";
 
-export default function LoginPage() {
+export default async function LoginPage() {
+  const session = await getServerSession(authOptions);
+  if (session?.user?.id && session.user.status === "ACTIVE") redirect("/");
+
   return (
     <main className="grid min-h-screen bg-background lg:grid-cols-[minmax(420px,1fr)_minmax(460px,1fr)]">
       <section className="relative hidden overflow-hidden bg-[linear-gradient(160deg,var(--color-primary)_0%,var(--color-primary-soft)_66%,oklch(0.76_0.11_337)_100%)] p-8 text-primary-foreground lg:flex lg:flex-col">

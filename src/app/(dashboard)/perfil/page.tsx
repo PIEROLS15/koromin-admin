@@ -1,6 +1,4 @@
-import { getServerSession } from "next-auth";
 import Image from "next/image";
-import { redirect } from "next/navigation";
 import { UserRound } from "lucide-react";
 
 import { PageHeader } from "@/components/layout/page-header";
@@ -8,8 +6,9 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { authOptions } from "@/lib/auth/options";
-import { prisma } from "@/lib/prisma/client";
+import { requireActiveUser } from "@/lib/auth/guards";
+import { formatDate } from "@/server/shared/format";
+import { getUserProfile } from "@/server/users/queries";
 
 const roleLabel = {
   ADMIN: "Administrador",
@@ -23,23 +22,9 @@ const statusLabel = {
 };
 
 export default async function ProfilePage() {
-  const session = await getServerSession(authOptions);
+  const activeUser = await requireActiveUser();
 
-  if (!session?.user?.id) redirect("/login");
-
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: {
-      email: true,
-      name: true,
-      image: true,
-      role: true,
-      status: true,
-      createdAt: true,
-    },
-  });
-
-  if (!user) redirect("/login");
+  const user = await getUserProfile(activeUser.id);
 
   const fullName = user.name || "Sin nombre";
   const initials = (user.name || user.email)
@@ -77,7 +62,7 @@ export default async function ProfilePage() {
             <p className="mt-1 max-w-full truncate text-sm text-muted-foreground">{user.email}</p>
             <Badge className="mt-4 bg-primary-softer text-primary">{roleLabel[user.role]}</Badge>
             <p className="mt-5 text-xs text-muted-foreground">
-              Cuenta creada el {user.createdAt.toLocaleDateString("es-PE")}
+              Cuenta creada el {formatDate(user.createdAt)}
             </p>
           </CardContent>
         </Card>

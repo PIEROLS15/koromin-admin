@@ -1,13 +1,13 @@
 import { z } from "zod";
 
-const money = z.coerce.number().min(0);
+import { money } from "@/lib/validations/money";
 
 export const createOrderSchema = z.object({
   supplierId: z.string().min(1),
   orderDate: z.coerce.date(),
   estimatedArrivalDate: z.coerce.date().optional(),
-  deliveryCost: money.default(0),
-  otherCosts: money.default(0),
+  deliveryCost: money.default("0.00"),
+  otherCosts: money.default("0.00"),
   observations: z.string().max(2000).optional(),
   items: z.array(
     z.object({
@@ -25,3 +25,5 @@ export const createOrderSchema = z.object({
     }),
   ).default([]),
 });
+
+export type CreateOrderInput = z.infer<typeof createOrderSchema>;

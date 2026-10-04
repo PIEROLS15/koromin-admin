@@ -28,7 +28,7 @@ ENV HOSTNAME=0.0.0.0
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 COPY prisma ./prisma
-COPY --from=deps /app/node_modules ./node_modules
+COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
@@ -39,4 +39,4 @@ RUN chown -R node:node /app
 USER node
 EXPOSE 3000
 
-CMD ["sh", "-c", "pnpm prisma generate && pnpm prisma db push --accept-data-loss && node server.js"]
+CMD ["sh", "-c", "pnpm prisma migrate deploy && node server.js"]

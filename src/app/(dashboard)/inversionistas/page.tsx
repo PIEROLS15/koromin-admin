@@ -1,14 +1,20 @@
-import { ModulePage } from "@/components/layout/module-page";
+import { requirePermission } from "@/lib/auth/guards";
+import { InvestorsTable } from "@/components/finance/investors-table";
+import { PageHeader } from "@/components/layout/page-header";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { getInvestorRows } from "@/server/finance/queries";
 
-export default function InvestorsPage() {
+export default async function InvestorsPage() {
+  await requirePermission("finance.view");
+  const investors = await getInvestorRows();
+
   return (
-    <ModulePage
-      title="Inversionistas"
-      description="Vista financiera de usuarios con aportes; no es un CRUD independiente."
-      tableTitle="Usuarios inversionistas"
-      tableDescription="Aparecen automáticamente cuando tienen al menos un OrderInvestment."
-      columns={["Usuario", "Total invertido", "Capital recuperado", "Ganancia", "Pedidos"]}
-      emptyLabel="Aún no hay usuarios con aportes registrados."
-    />
+    <>
+      <PageHeader title="Inversionistas" description="Vista financiera de usuarios con aportes; no es un CRUD independiente." />
+      <Card>
+        <CardHeader><CardTitle>Usuarios inversionistas</CardTitle><CardDescription>Aparecen automáticamente cuando tienen aportes registrados.</CardDescription></CardHeader>
+        <CardContent><InvestorsTable investors={investors} /></CardContent>
+      </Card>
+    </>
   );
 }
