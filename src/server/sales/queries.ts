@@ -2,15 +2,22 @@ import "server-only";
 
 import { saleTotal } from "@/lib/business/totals";
 import { prisma } from "@/lib/prisma/client";
+import { offsetFor, type ListParams } from "@/server/shared/pagination";
 
-const SALE_LIST_LIMIT = 50;
+export async function getSaleList(params: ListParams) {
+  const where = params.q ? { OR: [{ code: { contains: params.q, mode: "insensitive" as const } }, { customer: { name: { contains: params.q, mode: "insensitive" as const } } }] } : undefined;
+  const [rows, total] = await Promise.all([
+    prisma.sale.findMany({
+      where,
+      orderBy: { saleDate: "desc" },
+      skip: offsetFor(params),
+      take: params.pageSize,
+      include: { customer: true, items: true },
+    }),
+    prisma.sale.count({ where }),
+  ]);
 
-export async function getSaleList() {
-  return prisma.sale.findMany({
-    orderBy: { saleDate: "desc" },
-    take: SALE_LIST_LIMIT,
-    include: { customer: true, items: true },
-  });
+  return { rows, total, page: params.page, pageSize: params.pageSize };
 }
 
 export async function getSaleFormOptions() {

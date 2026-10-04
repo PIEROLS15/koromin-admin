@@ -1,29 +1,54 @@
 import "server-only";
 
 import { prisma } from "@/lib/prisma/client";
+import { offsetFor, type ListParams } from "@/server/shared/pagination";
 
-export async function getProductList() {
-  return prisma.product.findMany({
-    orderBy: { name: "asc" },
-    take: 100,
-    include: { productType: true, franchise: true, category: true },
-  });
+export async function getProductList(params: ListParams) {
+  const where = params.q ? { name: { contains: params.q, mode: "insensitive" as const } } : undefined;
+  const [rows, total] = await Promise.all([
+    prisma.product.findMany({
+      where,
+      orderBy: { name: "asc" },
+      skip: offsetFor(params),
+      take: params.pageSize,
+      include: { productType: true, franchise: true, category: true },
+    }),
+    prisma.product.count({ where }),
+  ]);
+
+  return { rows, total, page: params.page, pageSize: params.pageSize };
 }
 
-export async function getCustomerList() {
-  return prisma.customer.findMany({
-    orderBy: { name: "asc" },
-    take: 100,
-    include: { _count: { select: { sales: true } } },
-  });
+export async function getCustomerList(params: ListParams) {
+  const where = params.q ? { name: { contains: params.q, mode: "insensitive" as const } } : undefined;
+  const [rows, total] = await Promise.all([
+    prisma.customer.findMany({
+      where,
+      orderBy: { name: "asc" },
+      skip: offsetFor(params),
+      take: params.pageSize,
+      include: { _count: { select: { sales: true } } },
+    }),
+    prisma.customer.count({ where }),
+  ]);
+
+  return { rows, total, page: params.page, pageSize: params.pageSize };
 }
 
-export async function getSupplierList() {
-  return prisma.supplier.findMany({
-    orderBy: { name: "asc" },
-    take: 100,
-    include: { _count: { select: { orders: true } } },
-  });
+export async function getSupplierList(params: ListParams) {
+  const where = params.q ? { name: { contains: params.q, mode: "insensitive" as const } } : undefined;
+  const [rows, total] = await Promise.all([
+    prisma.supplier.findMany({
+      where,
+      orderBy: { name: "asc" },
+      skip: offsetFor(params),
+      take: params.pageSize,
+      include: { _count: { select: { orders: true } } },
+    }),
+    prisma.supplier.count({ where }),
+  ]);
+
+  return { rows, total, page: params.page, pageSize: params.pageSize };
 }
 
 export async function getAnimeCatalogRows() {

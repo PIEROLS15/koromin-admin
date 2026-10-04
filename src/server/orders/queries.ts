@@ -2,15 +2,22 @@ import "server-only";
 
 import { orderTotal } from "@/lib/business/totals";
 import { prisma } from "@/lib/prisma/client";
+import { offsetFor, type ListParams } from "@/server/shared/pagination";
 
-const ORDER_LIST_LIMIT = 50;
+export async function getOrderList(params: ListParams) {
+  const where = params.q ? { OR: [{ code: { contains: params.q, mode: "insensitive" as const } }, { supplier: { name: { contains: params.q, mode: "insensitive" as const } } }] } : undefined;
+  const [rows, total] = await Promise.all([
+    prisma.order.findMany({
+      where,
+      orderBy: { orderDate: "desc" },
+      skip: offsetFor(params),
+      take: params.pageSize,
+      include: { supplier: true, items: true },
+    }),
+    prisma.order.count({ where }),
+  ]);
 
-export async function getOrderList() {
-  return prisma.order.findMany({
-    orderBy: { orderDate: "desc" },
-    take: ORDER_LIST_LIMIT,
-    include: { supplier: true, items: true },
-  });
+  return { rows, total, page: params.page, pageSize: params.pageSize };
 }
 
 export async function getOrderDetail(orderId: string) {
