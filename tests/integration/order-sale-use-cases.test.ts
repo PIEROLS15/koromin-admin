@@ -116,4 +116,20 @@ describe("order and sale use cases", () => {
       }),
     })).rejects.toThrow("Stock insuficiente");
   });
+
+  it("rechaza venta de productos inactivos", async () => {
+    const user = await createTestUser();
+    const { customer, product } = await createCatalogFixture();
+    await prisma.product.update({ where: { id: product.id }, data: { active: false } });
+
+    await expect(createSaleUseCase({
+      userId: user.id,
+      code: "VEN-TEST-INACTIVE",
+      input: createSaleSchema.parse({
+        customerId: customer.id,
+        saleDate: "2026-10-03",
+        lines: [{ productId: product.id, quantity: "1", unitPrice: "20.00" }],
+      }),
+    })).rejects.toThrow("Producto no disponible");
+  });
 });

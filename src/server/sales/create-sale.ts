@@ -14,6 +14,14 @@ export async function createSaleUseCase({
   code?: string;
 }) {
   return prisma.$transaction(async (tx) => {
+    const [customer, activeProducts] = await Promise.all([
+      tx.customer.findUnique({ where: { id: input.customerId }, select: { id: true } }),
+      tx.product.findMany({ where: { id: { in: input.lines.map((line) => line.productId) }, active: true }, select: { id: true } }),
+    ]);
+
+    if (!customer) throw new Error("Cliente no encontrado");
+    if (activeProducts.length !== new Set(input.lines.map((line) => line.productId)).size) throw new Error("Producto no disponible");
+
     const sale = await tx.sale.create({
       data: {
         code,

@@ -18,6 +18,7 @@ export async function receiveOrderUseCase(orderId: string) {
 
     for (const item of order.items) {
       const missing = item.quantity - item.inventoryUnits.length;
+      if (missing < 0) throw new Error("El pedido tiene más unidades registradas que las solicitadas");
       if (missing <= 0) continue;
 
       await tx.inventoryUnit.createMany({
