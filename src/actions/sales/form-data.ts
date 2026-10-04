@@ -1,5 +1,7 @@
+import { SALE_FORM_MAX_LINES } from "@/lib/forms/limits";
+
 export function parseSaleFormData(formData: FormData) {
-  const lines = [0, 1, 2]
+  const lines = Array.from({ length: SALE_FORM_MAX_LINES }, (_, index) => index)
     .map((index) => ({
       productId: formData.get(`lines.${index}.productId`),
       quantity: formData.get(`lines.${index}.quantity`),

@@ -44,7 +44,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ or
       <Card>
         <CardHeader>
           <CardTitle>Productos del pedido</CardTitle>
-          <CardDescription>Detalle real desde PostgreSQL. La recepción de inventario debe implementarse como operación transaccional separada.</CardDescription>
+          <CardDescription>Detalle de productos, costos y unidades asociadas al pedido.</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto rounded-lg border">

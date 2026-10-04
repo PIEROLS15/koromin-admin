@@ -1,12 +1,14 @@
+import { ORDER_FORM_MAX_INVESTMENTS, ORDER_FORM_MAX_ITEMS } from "@/lib/forms/limits";
+
 export function parseOrderFormData(formData: FormData) {
-  const items = [0, 1, 2]
+  const items = Array.from({ length: ORDER_FORM_MAX_ITEMS }, (_, index) => index)
     .map((index) => ({
       productId: formData.get(`items.${index}.productId`),
       quantity: formData.get(`items.${index}.quantity`),
       unitPurchaseCost: formData.get(`items.${index}.unitPurchaseCost`),
     }))
     .filter((item) => item.productId && item.quantity && item.unitPurchaseCost);
-  const investments = [0, 1]
+  const investments = Array.from({ length: ORDER_FORM_MAX_INVESTMENTS }, (_, index) => index)
     .map((index) => ({
       userId: formData.get(`investments.${index}.userId`),
       amount: formData.get(`investments.${index}.amount`),
