@@ -13,6 +13,18 @@ export const createSupplierSchema = z.object({
   website: optionalUrl,
 });
 
+export const updateSupplierSchema = z.object({
+  name: z.string().trim().min(1).max(200),
+  contact: z.string().trim().max(500).nullable().optional(),
+  website: z
+    .string()
+    .trim()
+    .url("Ingresa una URL válida.")
+    .max(1000)
+    .nullable()
+    .optional(),
+});
+
 export const createCustomerSchema = z.object({
   name: z.string().trim().min(1).max(200),
   contact: z.string().trim().max(500).optional(),
@@ -36,6 +48,7 @@ export const franchiseSchema = z.object({
 });
 
 export type CreateSupplierInput = z.infer<typeof createSupplierSchema>;
+export type UpdateSupplierInput = z.infer<typeof updateSupplierSchema>;
 export type CreateCustomerInput = z.infer<typeof createCustomerSchema>;
 export type CreateProductInput = z.infer<typeof createProductSchema>;
 export type FranchiseInput = z.infer<typeof franchiseSchema>;
