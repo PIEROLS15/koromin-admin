@@ -17,7 +17,19 @@ export async function getOrderList(params: ListParams) {
     prisma.order.count({ where }),
   ]);
 
-  return { rows, total, page: params.page, pageSize: params.pageSize };
+  return {
+    rows: rows.map((order) => ({
+      id: order.id,
+      code: order.code,
+      status: order.status,
+      orderDate: order.orderDate,
+      supplier: order.supplier.name,
+      total: getOrderTotal(order),
+    })),
+    total,
+    page: params.page,
+    pageSize: params.pageSize,
+  };
 }
 
 export async function getOrderDetail(orderId: string) {

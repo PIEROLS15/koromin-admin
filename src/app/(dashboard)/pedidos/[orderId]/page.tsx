@@ -4,9 +4,9 @@ import { notFound } from "next/navigation";
 
 import { receiveOrderFormAction } from "@/actions/orders/receive-order";
 import { PageHeader } from "@/components/layout/page-header";
+import { OrderItemsTable } from "@/components/orders/order-items-table";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { requirePermission } from "@/lib/auth/guards";
 import { currency } from "@/lib/money/format";
 import { getOrderDetail, getOrderTotal } from "@/server/orders/queries";
@@ -26,6 +26,13 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ or
 
   const itemsTotal = order.items.reduce((sum, item) => sum + item.unitPurchaseCost.toNumber() * item.quantity, 0);
   const total = getOrderTotal(order);
+  const itemRows = order.items.map((item) => ({
+    id: item.id,
+    product: item.product.name,
+    quantity: item.quantity,
+    unitPurchaseCost: item.unitPurchaseCost.toNumber(),
+    inventoryUnits: item.inventoryUnits.length,
+  }));
 
   return (
     <>
@@ -47,28 +54,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ or
           <CardDescription>Detalle de productos, costos y unidades asociadas al pedido.</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto rounded-lg border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Producto</TableHead>
-                  <TableHead className="text-right">Cantidad</TableHead>
-                  <TableHead className="text-right">Costo unitario</TableHead>
-                  <TableHead className="text-right">Unidades creadas</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {order.items.map((item) => (
-                  <TableRow key={item.id}>
-                    <TableCell className="font-medium">{item.product.name}</TableCell>
-                    <TableCell className="text-right tabular-nums">{item.quantity}</TableCell>
-                    <TableCell className="text-right tabular-nums">{currency(item.unitPurchaseCost.toNumber())}</TableCell>
-                    <TableCell className="text-right tabular-nums">{item.inventoryUnits.length}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+          <OrderItemsTable items={itemRows} />
         </CardContent>
       </Card>
 
