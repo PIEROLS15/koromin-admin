@@ -3,11 +3,20 @@ import "server-only";
 import { prisma } from "@/lib/prisma/client";
 
 export async function getExpenseList() {
-  return prisma.expense.findMany({
+  const expenses = await prisma.expense.findMany({
     orderBy: { date: "desc" },
     take: 100,
     include: { order: true, sale: true },
   });
+
+  return expenses.map((expense) => ({
+    id: expense.id,
+    date: expense.date,
+    type: expense.type,
+    description: expense.description,
+    amount: expense.amount.toNumber(),
+    relatedCode: expense.order?.code ?? expense.sale?.code ?? null,
+  }));
 }
 
 export async function getInvestorRows() {

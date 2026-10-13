@@ -1,7 +1,5 @@
 import Link from "next/link";
 
-import { PaginationControls } from "@/components/data-table/pagination";
-import { TableSearchForm } from "@/components/data-table/search-form";
 import { OrdersTable } from "@/components/orders/orders-table";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
@@ -24,9 +22,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
           <CardDescription>Filtra y navega pedidos por código o proveedor.</CardDescription>
         </CardHeader>
         <CardContent>
-          <TableSearchForm q={params.q} placeholder="Buscar por código o proveedor" />
-          <OrdersTable orders={orders.rows} />
-          <PaginationControls result={orders} basePath="/pedidos" q={params.q} />
+          <OrdersTable orders={orders.rows} pagination={{ page: orders.page, pageSize: orders.pageSize, totalRows: orders.total, basePath: "/pedidos", q: params.q }} />
         </CardContent>
       </Card>
     </>

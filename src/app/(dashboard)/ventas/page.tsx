@@ -1,7 +1,5 @@
 import Link from "next/link";
 
-import { PaginationControls } from "@/components/data-table/pagination";
-import { TableSearchForm } from "@/components/data-table/search-form";
 import { PageHeader } from "@/components/layout/page-header";
 import { SalesTable } from "@/components/sales/sales-table";
 import { Button } from "@/components/ui/button";
@@ -24,9 +22,7 @@ export default async function SalesPage({ searchParams }: { searchParams: Promis
           <CardDescription>Filtra y navega ventas por código o cliente.</CardDescription>
         </CardHeader>
         <CardContent>
-          <TableSearchForm q={params.q} placeholder="Buscar por código o cliente" />
-          <SalesTable sales={sales.rows} />
-          <PaginationControls result={sales} basePath="/ventas" q={params.q} />
+          <SalesTable sales={sales.rows} pagination={{ page: sales.page, pageSize: sales.pageSize, totalRows: sales.total, basePath: "/ventas", q: params.q }} />
         </CardContent>
       </Card>
     </>

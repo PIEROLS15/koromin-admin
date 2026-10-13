@@ -17,7 +17,18 @@ export async function getSaleList(params: ListParams) {
     prisma.sale.count({ where }),
   ]);
 
-  return { rows, total, page: params.page, pageSize: params.pageSize };
+  return {
+    rows: rows.map((sale) => ({
+      id: sale.id,
+      code: sale.code,
+      saleDate: sale.saleDate,
+      customer: sale.customer.name,
+      total: getSaleTotal(sale),
+    })),
+    total,
+    page: params.page,
+    pageSize: params.pageSize,
+  };
 }
 
 export async function getSaleFormOptions() {

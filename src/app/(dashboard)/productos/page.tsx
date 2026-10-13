@@ -1,6 +1,4 @@
 import { requirePermission } from "@/lib/auth/guards";
-import { PaginationControls } from "@/components/data-table/pagination";
-import { TableSearchForm } from "@/components/data-table/search-form";
 import { ProductsTable } from "@/components/catalogs/products-table";
 import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,9 +16,7 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
       <Card>
         <CardHeader><CardTitle>Catálogo</CardTitle><CardDescription>Filtra y navega productos por nombre.</CardDescription></CardHeader>
         <CardContent>
-          <TableSearchForm q={params.q} placeholder="Buscar producto" />
-          <ProductsTable products={products.rows} />
-          <PaginationControls result={products} basePath="/productos" q={params.q} />
+          <ProductsTable products={products.rows} pagination={{ page: products.page, pageSize: products.pageSize, totalRows: products.total, basePath: "/productos", q: params.q }} />
         </CardContent>
       </Card>
     </>
