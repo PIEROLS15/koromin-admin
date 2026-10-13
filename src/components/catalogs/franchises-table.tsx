@@ -42,8 +42,19 @@ type FranchiseRow = {
 
 type DialogState = { mode: "create" } | { mode: "edit"; franchise: FranchiseRow } | null;
 
+type DeleteBlock = { kind: "active" | "sales" | "products"; message: string };
+
+function deleteBlockReason(row: FranchiseRow): DeleteBlock | null {
+  if (row.active) return { kind: "active", message: "Debes desactivarlo primero para poder eliminarlo." };
+  if (row.sold > 0) return { kind: "sales", message: "Está relacionado a ventas; no se puede eliminar." };
+  if (row.products > 0) return { kind: "products", message: "Tiene productos asociados; desactívalo en su lugar." };
+  return null;
+}
+
 export function FranchisesManager({ rows }: { rows: FranchiseRow[] }) {
   const [dialog, setDialog] = useState<DialogState>(null);
+  const [confirmDelete, setConfirmDelete] = useState<FranchiseRow | null>(null);
+  const [blocked, setBlocked] = useState<(DeleteBlock & { row: FranchiseRow }) | null>(null);
   const [name, setName] = useState("");
   const [active, setActive] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -91,8 +102,12 @@ export function FranchisesManager({ rows }: { rows: FranchiseRow[] }) {
 
   const handleDelete = async (row: FranchiseRow) => {
     const result = await deleteFranchise(row.id);
-    if (result.ok) toast.success("Anime eliminado");
-    else toast.error(result.error);
+    if (result.ok) {
+      toast.success("Anime eliminado");
+      setConfirmDelete(null);
+    } else {
+      toast.error(result.error);
+    }
   };
 
   const columns: PlatformTableColumn<FranchiseRow>[] = [
@@ -147,7 +162,14 @@ export function FranchisesManager({ rows }: { rows: FranchiseRow[] }) {
               {row.active ? "Desactivar" : "Activar"}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => handleDelete(row)}>
+            <DropdownMenuItem
+              className="text-destructive focus:text-destructive"
+              onClick={() => {
+                const block = deleteBlockReason(row);
+                if (block) setBlocked({ ...block, row });
+                else setConfirmDelete(row);
+              }}
+            >
               <Trash2 className="size-4" />
               Eliminar
             </DropdownMenuItem>
@@ -216,6 +238,57 @@ export function FranchisesManager({ rows }: { rows: FranchiseRow[] }) {
             </Button>
             <Button onClick={handleSave} disabled={saving || !name.trim()}>
               {saving ? "Guardando..." : "Guardar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!blocked} onOpenChange={(open) => !open && setBlocked(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>No se puede eliminar</DialogTitle>
+            <DialogDescription>{blocked?.message}</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            {blocked?.kind === "active" ? (
+              <>
+                <Button variant="outline" onClick={() => setBlocked(null)}>
+                  Entendido
+                </Button>
+                <Button
+                  onClick={async () => {
+                    if (!blocked) return;
+                    await handleToggle(blocked.row);
+                    setBlocked(null);
+                  }}
+                >
+                  <Power className="size-4" />
+                  Desactivar
+                </Button>
+              </>
+            ) : (
+              <Button variant="outline" onClick={() => setBlocked(null)}>
+                Entendido
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!confirmDelete} onOpenChange={(open) => !open && setConfirmDelete(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>¿Eliminar este anime?</DialogTitle>
+            <DialogDescription>
+              ¿Seguro que quieres eliminar «{confirmDelete?.name}»? Esta acción no se puede deshacer.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmDelete(null)}>
+              Cancelar
+            </Button>
+            <Button variant="destructive" onClick={() => confirmDelete && handleDelete(confirmDelete)}>
+              Eliminar
             </Button>
           </DialogFooter>
         </DialogContent>
