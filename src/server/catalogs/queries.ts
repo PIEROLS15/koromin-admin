@@ -16,7 +16,19 @@ export async function getProductList(params: ListParams) {
     prisma.product.count({ where }),
   ]);
 
-  return { rows, total, page: params.page, pageSize: params.pageSize };
+  return {
+    rows: rows.map((product) => ({
+      id: product.id,
+      name: product.name,
+      salePrice: product.salePrice.toNumber(),
+      productType: product.productType.name,
+      franchise: product.franchise.name,
+      category: product.category?.name ?? null,
+    })),
+    total,
+    page: params.page,
+    pageSize: params.pageSize,
+  };
 }
 
 export async function getCustomerList(params: ListParams) {
@@ -32,7 +44,18 @@ export async function getCustomerList(params: ListParams) {
     prisma.customer.count({ where }),
   ]);
 
-  return { rows, total, page: params.page, pageSize: params.pageSize };
+  return {
+    rows: rows.map((customer) => ({
+      id: customer.id,
+      name: customer.name,
+      contact: customer.contact,
+      createdAt: customer.createdAt,
+      salesCount: customer._count.sales,
+    })),
+    total,
+    page: params.page,
+    pageSize: params.pageSize,
+  };
 }
 
 export async function getSupplierList(params: ListParams) {
@@ -48,7 +71,18 @@ export async function getSupplierList(params: ListParams) {
     prisma.supplier.count({ where }),
   ]);
 
-  return { rows, total, page: params.page, pageSize: params.pageSize };
+  return {
+    rows: rows.map((supplier) => ({
+      id: supplier.id,
+      name: supplier.name,
+      contact: supplier.contact,
+      website: supplier.website,
+      ordersCount: supplier._count.orders,
+    })),
+    total,
+    page: params.page,
+    pageSize: params.pageSize,
+  };
 }
 
 export async function getAnimeCatalogRows() {

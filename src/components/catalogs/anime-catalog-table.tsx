@@ -1,26 +1,17 @@
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+"use client";
 
-export function AnimeCatalogTable({ rows }: { rows: Array<{ id: string; name: string; type: string; active: boolean; products: number }> }) {
-  return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Nombre</TableHead>
-          <TableHead>Tipo</TableHead>
-          <TableHead>Activo</TableHead>
-          <TableHead className="text-right">Productos</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {rows.map((row) => (
-          <TableRow key={row.id}>
-            <TableCell className="font-medium">{row.name}</TableCell>
-            <TableCell>{row.type}</TableCell>
-            <TableCell>{row.active ? "Sí" : "No"}</TableCell>
-            <TableCell className="text-right tabular-nums">{row.products}</TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
-  );
+import { PlatformDataTable, type PlatformTableColumn } from "@/components/data-table/platform-data-table";
+import { Badge } from "@/components/ui/badge";
+
+type AnimeCatalogRow = { id: string; name: string; type: string; active: boolean; products: number };
+
+const columns: PlatformTableColumn<AnimeCatalogRow>[] = [
+  { id: "name", header: "Nombre", value: (row) => row.name, sortable: true, filter: "text", className: "font-medium", cell: (row) => row.name },
+  { id: "type", header: "Tipo", value: (row) => row.type, sortable: true, filter: "enum", options: [{ value: "Franquicia", label: "Franquicia" }, { value: "Categoría", label: "Categoría" }, { value: "Tipo", label: "Tipo" }], cell: (row) => row.type },
+  { id: "active", header: "Activo", value: (row) => (row.active ? "Sí" : "No"), sortable: true, filter: "enum", options: [{ value: "Sí", label: "Sí" }, { value: "No", label: "No" }], cell: (row) => <Badge className="border-transparent bg-primary-softer text-primary">{row.active ? "Sí" : "No"}</Badge> },
+  { id: "products", header: "Productos", value: (row) => row.products, sortable: true, filter: "number", align: "right", cell: (row) => row.products },
+];
+
+export function AnimeCatalogTable({ rows }: { rows: AnimeCatalogRow[] }) {
+  return <PlatformDataTable data={rows} columns={columns} rowKey={(row) => row.id} entity={{ singular: "catálogo", plural: "catálogos" }} searchPlaceholder="Buscar catálogo" searchText={(row) => `${row.name} ${row.type}`} initialSort={{ id: "name", dir: "asc" }} minWidth="760px" emptyLabel="No se encontraron catálogos." />;
 }

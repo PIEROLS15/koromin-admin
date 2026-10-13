@@ -1,27 +1,17 @@
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+"use client";
+
+import { PlatformDataTable, type PlatformTableColumn, type PlatformTableManualPagination } from "@/components/data-table/platform-data-table";
 import { formatDate } from "@/server/shared/format";
 
-export function CustomersTable({ customers }: { customers: Array<{ id: string; name: string; contact: string | null; createdAt: Date; _count: { sales: number } }> }) {
-  return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Nombre</TableHead>
-          <TableHead>Contacto</TableHead>
-          <TableHead className="text-right">Ventas</TableHead>
-          <TableHead>Creado</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {customers.map((customer) => (
-          <TableRow key={customer.id}>
-            <TableCell className="font-medium">{customer.name}</TableCell>
-            <TableCell>{customer.contact ?? "-"}</TableCell>
-            <TableCell className="text-right tabular-nums">{customer._count.sales}</TableCell>
-            <TableCell>{formatDate(customer.createdAt)}</TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
-  );
+type CustomerRow = { id: string; name: string; contact: string | null; createdAt: Date; salesCount: number };
+
+const columns: PlatformTableColumn<CustomerRow>[] = [
+  { id: "name", header: "Nombre", value: (customer) => customer.name, sortable: true, filter: "text", className: "font-medium", cell: (customer) => customer.name },
+  { id: "contact", header: "Contacto", value: (customer) => customer.contact, sortable: true, filter: "text", cell: (customer) => customer.contact ?? "-" },
+  { id: "salesCount", header: "Ventas", value: (customer) => customer.salesCount, sortable: true, filter: "number", align: "right", cell: (customer) => customer.salesCount },
+  { id: "createdAt", header: "Creado", value: (customer) => customer.createdAt, sortable: true, filter: "date", cell: (customer) => formatDate(customer.createdAt) },
+];
+
+export function CustomersTable({ customers, pagination }: { customers: CustomerRow[]; pagination: PlatformTableManualPagination }) {
+  return <PlatformDataTable data={customers} columns={columns} rowKey={(customer) => customer.id} entity={{ singular: "cliente", plural: "clientes" }} searchPlaceholder="Buscar cliente" searchText={(customer) => `${customer.name} ${customer.contact ?? ""}`} initialSort={{ id: "name", dir: "asc" }} minWidth="760px" emptyLabel="No se encontraron clientes." manualPagination={pagination} />;
 }

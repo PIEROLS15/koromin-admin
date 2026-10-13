@@ -1,6 +1,4 @@
 import { requirePermission } from "@/lib/auth/guards";
-import { PaginationControls } from "@/components/data-table/pagination";
-import { TableSearchForm } from "@/components/data-table/search-form";
 import { SuppliersTable } from "@/components/catalogs/suppliers-table";
 import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,9 +16,7 @@ export default async function SuppliersPage({ searchParams }: { searchParams: Pr
       <Card>
         <CardHeader><CardTitle>Proveedores</CardTitle><CardDescription>Filtra y navega proveedores por nombre.</CardDescription></CardHeader>
         <CardContent>
-          <TableSearchForm q={params.q} placeholder="Buscar proveedor" />
-          <SuppliersTable suppliers={suppliers.rows} />
-          <PaginationControls result={suppliers} basePath="/proveedores" q={params.q} />
+          <SuppliersTable suppliers={suppliers.rows} pagination={{ page: suppliers.page, pageSize: suppliers.pageSize, totalRows: suppliers.total, basePath: "/proveedores", q: params.q }} />
         </CardContent>
       </Card>
     </>
