@@ -2,6 +2,7 @@ import "server-only";
 
 import { InventoryStatus } from "@prisma/client";
 
+import { orderTotal } from "@/lib/business/totals";
 import { prisma } from "@/lib/prisma/client";
 import { offsetFor, type ListParams } from "@/server/shared/pagination";
 
@@ -62,28 +63,102 @@ export async function getCustomerList(params: ListParams) {
 
 export async function getSupplierList(params: ListParams) {
   const where = params.q ? { name: { contains: params.q, mode: "insensitive" as const } } : undefined;
-  const [rows, total] = await Promise.all([
+  const [suppliers, total] = await Promise.all([
     prisma.supplier.findMany({
       where,
       orderBy: { name: "asc" },
       skip: offsetFor(params),
       take: params.pageSize,
-      include: { _count: { select: { orders: true } } },
+      select: { id: true, name: true, contact: true, website: true, active: true },
     }),
     prisma.supplier.count({ where }),
   ]);
 
+  const orders = suppliers.length
+    ? await prisma.order.findMany({
+        where: { supplierId: { in: suppliers.map((s) => s.id) } },
+        select: {
+          supplierId: true,
+          orderDate: true,
+          deliveryCost: true,
+          otherCosts: true,
+          items: { select: { quantity: true, unitPurchaseCost: true } },
+        },
+      })
+    : [];
+
+  const stats = new Map(
+    suppliers.map((s) => [s.id, { orders: 0, total: 0, last: null as Date | null }]),
+  );
+
+  for (const order of orders) {
+    const entry = stats.get(order.supplierId);
+    if (!entry) continue;
+    entry.orders += 1;
+    entry.total += orderTotal(order);
+    if (!entry.last || order.orderDate > entry.last) entry.last = order.orderDate;
+  }
+
   return {
-    rows: rows.map((supplier) => ({
-      id: supplier.id,
-      name: supplier.name,
-      contact: supplier.contact,
-      website: supplier.website,
-      ordersCount: supplier._count.orders,
-    })),
+    rows: suppliers.map((supplier) => {
+      const s = stats.get(supplier.id)!;
+      return {
+        id: supplier.id,
+        name: supplier.name,
+        contact: supplier.contact,
+        website: supplier.website,
+        active: supplier.active,
+        ordersCount: s.orders,
+        total: s.total,
+        last: s.last,
+      };
+    }),
     total,
     page: params.page,
     pageSize: params.pageSize,
+  };
+}
+
+export type SupplierDetail = {
+  id: string;
+  name: string;
+  contact: string | null;
+  website: string | null;
+  active: boolean;
+  orders: Array<{ id: string; code: string; orderDate: Date; status: string; units: number; total: number }>;
+};
+
+export async function getSupplierDetail(id: string): Promise<SupplierDetail | null> {
+  const supplier = await prisma.supplier.findUnique({
+    where: { id },
+    select: { id: true, name: true, contact: true, website: true, active: true },
+  });
+  if (!supplier) return null;
+
+  const orders = await prisma.order.findMany({
+    where: { supplierId: id },
+    orderBy: { orderDate: "desc" },
+    select: {
+      id: true,
+      code: true,
+      orderDate: true,
+      status: true,
+      deliveryCost: true,
+      otherCosts: true,
+      items: { select: { quantity: true, unitPurchaseCost: true } },
+    },
+  });
+
+  return {
+    ...supplier,
+    orders: orders.map((order) => ({
+      id: order.id,
+      code: order.code,
+      orderDate: order.orderDate,
+      status: order.status,
+      units: order.items.reduce((sum, item) => sum + item.quantity, 0),
+      total: orderTotal(order),
+    })),
   };
 }
 
