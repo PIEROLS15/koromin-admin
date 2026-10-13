@@ -1,5 +1,7 @@
 import "server-only";
 
+import { InventoryStatus } from "@prisma/client";
+
 import { prisma } from "@/lib/prisma/client";
 import { offsetFor, type ListParams } from "@/server/shared/pagination";
 
@@ -85,16 +87,60 @@ export async function getSupplierList(params: ListParams) {
   };
 }
 
-export async function getAnimeCatalogRows() {
-  const [franchises, categories, productTypes] = await Promise.all([
-    prisma.franchise.findMany({ orderBy: { name: "asc" }, include: { _count: { select: { products: true } } } }),
-    prisma.category.findMany({ orderBy: { name: "asc" }, include: { _count: { select: { products: true } } } }),
-    prisma.productType.findMany({ orderBy: { name: "asc" }, include: { _count: { select: { products: true } } } }),
-  ]);
+export type FranchiseStatsRow = {
+  id: string;
+  name: string;
+  active: boolean;
+  products: number;
+  stock: number;
+  sold: number;
+  revenue: number;
+};
 
-  return [
-    ...franchises.map((item) => ({ id: `franchise-${item.id}`, name: item.name, type: "Franquicia", active: item.active, products: item._count.products })),
-    ...categories.map((item) => ({ id: `category-${item.id}`, name: item.name, type: "Categoría", active: item.active, products: item._count.products })),
-    ...productTypes.map((item) => ({ id: `type-${item.id}`, name: item.name, type: "Tipo", active: item.active, products: item._count.products })),
-  ];
+export async function getFranchisesWithStats(): Promise<FranchiseStatsRow[]> {
+  const franchises = await prisma.franchise.findMany({
+    orderBy: { name: "asc" },
+    include: { _count: { select: { products: true } } },
+  });
+
+  if (franchises.length === 0) return [];
+
+  const units = await prisma.inventoryUnit.findMany({
+    where: {
+      status: { in: [InventoryStatus.IN_STOCK, InventoryStatus.SOLD] },
+      product: { franchiseId: { in: franchises.map((f) => f.id) } },
+    },
+    select: {
+      status: true,
+      product: { select: { franchiseId: true } },
+      saleItemUnit: { select: { saleItem: { select: { unitPrice: true } } } },
+    },
+  });
+
+  const stats = new Map(franchises.map((f) => [f.id, { stock: 0, sold: 0, revenue: 0 }]));
+
+  for (const unit of units) {
+    const entry = stats.get(unit.product.franchiseId);
+    if (!entry) continue;
+    if (unit.status === InventoryStatus.IN_STOCK) {
+      entry.stock += 1;
+    } else if (unit.status === InventoryStatus.SOLD) {
+      entry.sold += 1;
+      const price = unit.saleItemUnit?.saleItem.unitPrice;
+      if (price) entry.revenue += price.toNumber();
+    }
+  }
+
+  return franchises.map((franchise) => {
+    const s = stats.get(franchise.id)!;
+    return {
+      id: franchise.id,
+      name: franchise.name,
+      active: franchise.active,
+      products: franchise._count.products,
+      stock: s.stock,
+      sold: s.sold,
+      revenue: s.revenue,
+    };
+  });
 }

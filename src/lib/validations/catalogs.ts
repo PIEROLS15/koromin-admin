@@ -30,6 +30,12 @@ export const createProductSchema = z.object({
   observations: z.string().trim().max(2000).optional(),
 });
 
+export const franchiseSchema = z.object({
+  name: z.string().trim().min(1).max(200),
+  active: z.boolean().optional(),
+});
+
 export type CreateSupplierInput = z.infer<typeof createSupplierSchema>;
 export type CreateCustomerInput = z.infer<typeof createCustomerSchema>;
 export type CreateProductInput = z.infer<typeof createProductSchema>;
+export type FranchiseInput = z.infer<typeof franchiseSchema>;
