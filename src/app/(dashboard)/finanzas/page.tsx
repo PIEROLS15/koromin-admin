@@ -1,20 +1,35 @@
 import { requirePermission } from "@/lib/auth/guards";
-import { ExpensesTable } from "@/components/finance/expenses-table";
+import { FinanceBreakdown } from "@/components/finance/finance-breakdown";
+import { FinanceFilters } from "@/components/finance/finance-filters";
 import { PageHeader } from "@/components/layout/page-header";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { getExpenseList } from "@/server/finance/queries";
+import { getFinanceOptions, getFinanceSummary } from "@/server/finance/summary";
 
-export default async function FinancePage() {
+type SearchParams = Record<string, string | string[] | undefined>;
+
+function first(value: string | string[] | undefined): string | null {
+  return typeof value === "string" && value ? value : null;
+}
+
+export default async function FinancePage({ searchParams }: { searchParams: Promise<SearchParams> }) {
   await requirePermission("finance.view");
-  const expenses = await getExpenseList();
+  const params = await searchParams;
+
+  const filters = {
+    from: first(params.from),
+    to: first(params.to),
+    franchiseId: first(params.franchise),
+    productTypeId: first(params.type),
+    orderId: first(params.order),
+    investorId: first(params.investor),
+  };
+
+  const [options, summary] = await Promise.all([getFinanceOptions(), getFinanceSummary(filters)]);
 
   return (
     <>
-      <PageHeader title="Finanzas" description="Gastos, inversión, recuperación de capital y ganancia." />
-      <Card>
-        <CardHeader><CardTitle>Gastos registrados</CardTitle><CardDescription>Mostrando hasta 100 movimientos.</CardDescription></CardHeader>
-        <CardContent><ExpensesTable expenses={expenses} /></CardContent>
-      </Card>
+      <PageHeader title="Finanzas" description="Inversión, ingresos y rentabilidad del negocio." />
+      <FinanceFilters options={options} />
+      <FinanceBreakdown summary={summary} />
     </>
   );
 }
