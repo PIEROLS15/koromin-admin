@@ -42,6 +42,18 @@ export const createProductSchema = z.object({
   observations: z.string().trim().max(2000).optional(),
 });
 
+export const updateProductSchema = z.object({
+  name: z.string().trim().min(1).max(200),
+  productTypeId: z.string().min(1),
+  franchiseId: z.string().min(1),
+  categoryId: z.string().nullable().optional(),
+  manufacturer: z.string().trim().max(200).nullable().optional(),
+  salePrice: money,
+  imageUrl: z.string().trim().url("Ingresa una URL válida.").max(1000).nullable().optional(),
+  description: z.string().trim().max(2000).nullable().optional(),
+  observations: z.string().trim().max(2000).nullable().optional(),
+});
+
 export const franchiseSchema = z.object({
   name: z.string().trim().min(1).max(200),
   active: z.boolean().optional(),
@@ -51,4 +63,5 @@ export type CreateSupplierInput = z.infer<typeof createSupplierSchema>;
 export type UpdateSupplierInput = z.infer<typeof updateSupplierSchema>;
 export type CreateCustomerInput = z.infer<typeof createCustomerSchema>;
 export type CreateProductInput = z.infer<typeof createProductSchema>;
+export type UpdateProductInput = z.infer<typeof updateProductSchema>;
 export type FranchiseInput = z.infer<typeof franchiseSchema>;
