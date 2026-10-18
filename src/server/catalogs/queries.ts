@@ -98,6 +98,29 @@ export async function getProductOptions(): Promise<ProductOptions> {
   return { franchises, productTypes, categories };
 }
 
+export type ProductTypeRow = {
+  id: string;
+  name: string;
+  slug: string;
+  active: boolean;
+  products: number;
+};
+
+export async function getProductTypeList(): Promise<ProductTypeRow[]> {
+  const productTypes = await prisma.productType.findMany({
+    orderBy: { name: "asc" },
+    include: { _count: { select: { products: true } } },
+  });
+
+  return productTypes.map((type) => ({
+    id: type.id,
+    name: type.name,
+    slug: type.slug,
+    active: type.active,
+    products: type._count.products,
+  }));
+}
+
 export async function getCustomerList(params: ListParams) {
   const where = params.q ? { name: { contains: params.q, mode: "insensitive" as const } } : undefined;
   const [rows, total] = await Promise.all([

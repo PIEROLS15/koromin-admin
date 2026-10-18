@@ -59,9 +59,15 @@ export const franchiseSchema = z.object({
   active: z.boolean().optional(),
 });
 
+export const productTypeSchema = z.object({
+  name: z.string().trim().min(1).max(200),
+  active: z.boolean().optional(),
+});
+
 export type CreateSupplierInput = z.infer<typeof createSupplierSchema>;
 export type UpdateSupplierInput = z.infer<typeof updateSupplierSchema>;
 export type CreateCustomerInput = z.infer<typeof createCustomerSchema>;
 export type CreateProductInput = z.infer<typeof createProductSchema>;
 export type UpdateProductInput = z.infer<typeof updateProductSchema>;
 export type FranchiseInput = z.infer<typeof franchiseSchema>;
+export type ProductTypeInput = z.infer<typeof productTypeSchema>;
