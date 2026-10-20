@@ -22,10 +22,8 @@ export async function getProductList(params: ListParams) {
         manufacturer: true,
         imageUrl: true,
         description: true,
-        observations: true,
         franchiseId: true,
         productTypeId: true,
-        categoryId: true,
         franchise: { select: { name: true } },
         productType: { select: { name: true } },
         mangaDetail: { select: { publisher: true } },
@@ -66,12 +64,10 @@ export async function getProductList(params: ListParams) {
         franchise: product.franchise.name,
         productTypeId: product.productTypeId,
         productType: product.productType.name,
-        categoryId: product.categoryId,
         manufacturer: product.manufacturer,
         salePrice: product.salePrice.toNumber(),
         imageUrl: product.imageUrl,
         description: product.description,
-        observations: product.observations,
         stock: u.stock,
         sold: u.sold,
         hasRelations: product._count.orderItems > 0 || product._count.saleItems > 0 || u.total > 0,
@@ -86,22 +82,19 @@ export async function getProductList(params: ListParams) {
 export type ProductOptions = {
   franchises: Array<{ id: string; name: string; active: boolean }>;
   productTypes: Array<{ id: string; name: string; active: boolean }>;
-  categories: Array<{ id: string; name: string; active: boolean }>;
 };
 
 export async function getProductOptions(): Promise<ProductOptions> {
-  const [franchises, productTypes, categories] = await Promise.all([
+  const [franchises, productTypes] = await Promise.all([
     prisma.franchise.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true, active: true } }),
     prisma.productType.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true, active: true } }),
-    prisma.category.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true, active: true } }),
   ]);
-  return { franchises, productTypes, categories };
+  return { franchises, productTypes };
 }
 
 export type ProductTypeRow = {
   id: string;
   name: string;
-  slug: string;
   active: boolean;
   products: number;
 };
@@ -115,7 +108,6 @@ export async function getProductTypeList(): Promise<ProductTypeRow[]> {
   return productTypes.map((type) => ({
     id: type.id,
     name: type.name,
-    slug: type.slug,
     active: type.active,
     products: type._count.products,
   }));

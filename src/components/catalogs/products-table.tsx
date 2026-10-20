@@ -33,8 +33,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { currency } from "@/lib/money/format";
 import type { ProductOptions } from "@/server/catalogs/queries";
 
-const NONE = "none";
-
 type ProductRow = {
   id: string;
   name: string;
@@ -43,12 +41,10 @@ type ProductRow = {
   franchise: string;
   productTypeId: string;
   productType: string;
-  categoryId: string | null;
   manufacturer: string | null;
   salePrice: number;
   imageUrl: string | null;
   description: string | null;
-  observations: string | null;
   stock: number;
   sold: number;
   hasRelations: boolean;
@@ -75,12 +71,10 @@ export function ProductsManager({
   const [name, setName] = useState("");
   const [productTypeId, setProductTypeId] = useState("");
   const [franchiseId, setFranchiseId] = useState("");
-  const [categoryId, setCategoryId] = useState("");
   const [manufacturer, setManufacturer] = useState("");
   const [salePrice, setSalePrice] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [description, setDescription] = useState("");
-  const [observations, setObservations] = useState("");
 
   const firstActive = (rows: Array<{ id: string; active: boolean }>) => rows.find((row) => row.active)?.id ?? rows[0]?.id ?? "";
 
@@ -88,12 +82,10 @@ export function ProductsManager({
     setName("");
     setProductTypeId(firstActive(options.productTypes));
     setFranchiseId(firstActive(options.franchises));
-    setCategoryId("");
     setManufacturer("");
     setSalePrice("");
     setImageUrl("");
     setDescription("");
-    setObservations("");
     setDialog({ mode: "create" });
   };
 
@@ -101,12 +93,10 @@ export function ProductsManager({
     setName(product.name);
     setProductTypeId(product.productTypeId);
     setFranchiseId(product.franchiseId);
-    setCategoryId(product.categoryId ?? "");
     setManufacturer(product.manufacturer ?? "");
     setSalePrice(String(product.salePrice));
     setImageUrl(product.imageUrl ?? "");
     setDescription(product.description ?? "");
-    setObservations(product.observations ?? "");
     setDialog({ mode: "edit", product });
   };
 
@@ -124,12 +114,10 @@ export function ProductsManager({
           name: trimmedName,
           productTypeId,
           franchiseId,
-          categoryId: categoryId || null,
           manufacturer: manufacturer.trim() || null,
           salePrice: price,
           imageUrl: imageUrl.trim() || null,
           description: description.trim() || null,
-          observations: observations.trim() || null,
         });
         if (result.ok) {
           toast.success("Producto guardado");
@@ -142,12 +130,10 @@ export function ProductsManager({
           name: trimmedName,
           productTypeId,
           franchiseId,
-          categoryId: categoryId || undefined,
           manufacturer: manufacturer.trim() || undefined,
           salePrice: price,
           imageUrl: imageUrl.trim() || undefined,
           description: description.trim() || undefined,
-          observations: observations.trim() || undefined,
         });
         toast.success("Producto creado");
         setDialog(null);
@@ -178,10 +164,6 @@ export function ProductsManager({
   const franchiseSelectOptions = options.franchises
     .filter((f) => f.active || f.id === franchiseId)
     .map((f) => ({ value: f.id, label: f.name }));
-  const categorySelectOptions: OptionItem[] = [
-    { value: NONE, label: "Ninguna" },
-    ...options.categories.filter((c) => c.active || c.id === categoryId).map((c) => ({ value: c.id, label: c.name })),
-  ];
 
   const columns: PlatformTableColumn<ProductRow>[] = [
     {
@@ -293,7 +275,6 @@ export function ProductsManager({
             </div>
             {selectField("Tipo de producto", productTypeId, setProductTypeId, typeSelectOptions)}
             {selectField("Anime / franquicia", franchiseId, setFranchiseId, franchiseSelectOptions)}
-            {selectField("Categoría", categoryId || NONE, (value) => setCategoryId(value === NONE ? "" : value), categorySelectOptions)}
             <div className="space-y-2">
               <Label>Fabricante</Label>
               <Input value={manufacturer} onChange={(event) => setManufacturer(event.target.value)} placeholder="Banpresto, Bandai..." />
@@ -309,10 +290,6 @@ export function ProductsManager({
             <div className="space-y-2 sm:col-span-2">
               <Label>Descripción</Label>
               <Textarea rows={2} value={description} onChange={(event) => setDescription(event.target.value)} />
-            </div>
-            <div className="space-y-2 sm:col-span-2">
-              <Label>Observaciones</Label>
-              <Textarea rows={2} value={observations} onChange={(event) => setObservations(event.target.value)} />
             </div>
           </div>
           <DialogFooter>

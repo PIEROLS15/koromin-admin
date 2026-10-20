@@ -34,24 +34,20 @@ export const createProductSchema = z.object({
   name: z.string().trim().min(1).max(200),
   productTypeId: z.string().min(1),
   franchiseId: z.string().min(1),
-  categoryId: z.string().optional(),
   manufacturer: z.string().trim().max(200).optional(),
   salePrice: money,
   imageUrl: optionalUrl,
   description: z.string().trim().max(2000).optional(),
-  observations: z.string().trim().max(2000).optional(),
 });
 
 export const updateProductSchema = z.object({
   name: z.string().trim().min(1).max(200),
   productTypeId: z.string().min(1),
   franchiseId: z.string().min(1),
-  categoryId: z.string().nullable().optional(),
   manufacturer: z.string().trim().max(200).nullable().optional(),
   salePrice: money,
   imageUrl: z.string().trim().url("Ingresa una URL válida.").max(1000).nullable().optional(),
   description: z.string().trim().max(2000).nullable().optional(),
-  observations: z.string().trim().max(2000).nullable().optional(),
 });
 
 export const franchiseSchema = z.object({

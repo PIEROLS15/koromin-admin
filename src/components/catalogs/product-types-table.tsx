@@ -29,14 +29,22 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 
-type ProductTypeItem = { id: string; name: string; slug: string; active: boolean; products: number };
+type ProductTypeItem = { id: string; name: string; active: boolean; products: number };
 
 type DialogState = { mode: "create" } | { mode: "edit"; productType: ProductTypeItem } | null;
+
+type BlockState = { row: ProductTypeItem; title: string; message: string; canToggle?: boolean };
+
+function deleteBlockReason(row: ProductTypeItem): Omit<BlockState, "row"> | null {
+  if (row.products > 0) return { title: "No se puede eliminar", message: "Tiene productos asociados; no se puede eliminar." };
+  if (row.active) return { title: "No se puede eliminar", message: "Debes desactivarlo primero para poder eliminarlo.", canToggle: true };
+  return null;
+}
 
 export function ProductTypesManager({ rows }: { rows: ProductTypeItem[] }) {
   const [dialog, setDialog] = useState<DialogState>(null);
   const [confirmDelete, setConfirmDelete] = useState<ProductTypeItem | null>(null);
-  const [blocked, setBlocked] = useState<ProductTypeItem | null>(null);
+  const [blocked, setBlocked] = useState<BlockState | null>(null);
   const [name, setName] = useState("");
   const [active, setActive] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -102,7 +110,6 @@ export function ProductTypesManager({ rows }: { rows: ProductTypeItem[] }) {
       className: "font-medium",
       cell: (row) => row.name,
     },
-    { id: "slug", header: "Slug", value: (row) => row.slug, sortable: true, filter: "text", className: "text-muted-foreground", cell: (row) => row.slug },
     { id: "products", header: "Productos", value: (row) => row.products, sortable: true, filter: "number", align: "right", cell: (row) => row.products },
     {
       id: "status",
@@ -136,14 +143,26 @@ export function ProductTypesManager({ rows }: { rows: ProductTypeItem[] }) {
               <Pencil className="size-4" />
               Editar
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleToggle(row)}>
+            <DropdownMenuItem
+              onClick={() => {
+                if (row.products > 0) {
+                  setBlocked({ row, title: "No se puede desactivar", message: "Tiene productos asociados; no se puede desactivar." });
+                  return;
+                }
+                void handleToggle(row);
+              }}
+            >
               <Power className="size-4" />
               {row.active ? "Desactivar" : "Activar"}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
               className="text-destructive focus:text-destructive"
-              onClick={() => (row.products > 0 ? setBlocked(row) : setConfirmDelete(row))}
+              onClick={() => {
+                const block = deleteBlockReason(row);
+                if (block) setBlocked({ ...block, row });
+                else setConfirmDelete(row);
+              }}
             >
               <Trash2 className="size-4" />
               Eliminar
@@ -154,11 +173,13 @@ export function ProductTypesManager({ rows }: { rows: ProductTypeItem[] }) {
     },
   ];
 
+  const editToggleBlocked = dialog?.mode === "edit" && dialog.productType.products > 0;
+
   return (
     <div>
       <PageHeader
         title="Tipos de producto"
-        description="Categorías de catálogo seleccionables al crear productos."
+        description="Tipos seleccionables al crear productos."
         actions={
           <Button onClick={openCreate}>
             <Plus className="size-4" />
@@ -175,10 +196,10 @@ export function ProductTypesManager({ rows }: { rows: ProductTypeItem[] }) {
             rowKey={(row) => row.id}
             entity={{ singular: "tipo", plural: "tipos" }}
             searchPlaceholder="Buscar tipo..."
-            searchText={(row) => `${row.name} ${row.slug}`}
+            searchText={(row) => row.name}
             initialSort={{ id: "name", dir: "asc" }}
             emptyLabel="Sin tipos de producto registrados."
-            minWidth="760px"
+            minWidth="660px"
           />
         </CardContent>
       </Card>
@@ -187,7 +208,7 @@ export function ProductTypesManager({ rows }: { rows: ProductTypeItem[] }) {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{dialog?.mode === "edit" ? "Editar tipo" : "Nuevo tipo de producto"}</DialogTitle>
-            <DialogDescription>El slug se genera automáticamente desde el nombre.</DialogDescription>
+            <DialogDescription>Un tipo puede tener muchos productos asociados.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
@@ -202,9 +223,11 @@ export function ProductTypesManager({ rows }: { rows: ProductTypeItem[] }) {
             <div className="flex items-center justify-between rounded-lg border p-3">
               <div>
                 <p className="text-sm font-medium">Activo</p>
-                <p className="text-xs text-muted-foreground">Los inactivos no se sugieren al crear productos.</p>
+                <p className="text-xs text-muted-foreground">
+                  {editToggleBlocked ? "Tiene productos asociados; no se puede desactivar." : "Los inactivos no se sugieren al crear productos."}
+                </p>
               </div>
-              <Switch checked={active} onCheckedChange={setActive} aria-label="Activo" />
+              <Switch checked={active} onCheckedChange={setActive} disabled={editToggleBlocked} aria-label="Activo" />
             </div>
           </div>
           <DialogFooter>
@@ -221,18 +244,19 @@ export function ProductTypesManager({ rows }: { rows: ProductTypeItem[] }) {
       <Dialog open={!!blocked} onOpenChange={(open) => !open && setBlocked(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>No se puede eliminar</DialogTitle>
-            <DialogDescription>«{blocked?.name}» tiene productos asociados; desactívalo en su lugar.</DialogDescription>
+            <DialogTitle>{blocked?.title}</DialogTitle>
+            <DialogDescription>{blocked?.message}</DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            {blocked ? (
+            {blocked?.canToggle ? (
               <>
                 <Button variant="outline" onClick={() => setBlocked(null)}>
                   Entendido
                 </Button>
                 <Button
                   onClick={async () => {
-                    await handleToggle(blocked);
+                    if (!blocked) return;
+                    await handleToggle(blocked.row);
                     setBlocked(null);
                   }}
                 >

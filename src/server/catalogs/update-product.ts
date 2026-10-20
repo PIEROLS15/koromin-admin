@@ -11,11 +11,9 @@ export async function updateProductUseCase(id: string, input: UpdateProductInput
       productTypeId: input.productTypeId,
       franchiseId: input.franchiseId,
       salePrice: input.salePrice,
-      ...(input.categoryId !== undefined ? { categoryId: input.categoryId } : {}),
       ...(input.manufacturer !== undefined ? { manufacturer: input.manufacturer } : {}),
       ...(input.imageUrl !== undefined ? { imageUrl: input.imageUrl } : {}),
       ...(input.description !== undefined ? { description: input.description } : {}),
-      ...(input.observations !== undefined ? { observations: input.observations } : {}),
     },
   });
 }

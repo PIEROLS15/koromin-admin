@@ -2,21 +2,18 @@ import "server-only";
 
 import { prisma } from "@/lib/prisma/client";
 
-export class ProductTypeHasProductsError extends Error {
-  constructor() {
-    super("Tiene productos asociados; no se puede eliminar. Desactívalo en su lugar.");
-    this.name = "ProductTypeHasProductsError";
-  }
-}
+export class ProductTypeDeleteError extends Error {}
 
 export async function deleteProductTypeUseCase(id: string) {
   const productType = await prisma.productType.findUnique({
     where: { id },
-    select: { _count: { select: { products: true } } },
+    select: { active: true, _count: { select: { products: true } } },
   });
-  if (!productType) return;
+  if (!productType) throw new ProductTypeDeleteError("Tipo de producto no encontrado.");
 
-  if (productType._count.products > 0) throw new ProductTypeHasProductsError();
+  if (productType._count.products > 0) throw new ProductTypeDeleteError("Tiene productos asociados; no se puede eliminar.");
 
-  await prisma.productType.delete({ where: { id } });
+  if (productType.active) throw new ProductTypeDeleteError("Debes desactivarlo primero para poder eliminarlo.");
+
+  return prisma.productType.delete({ where: { id } });
 }
