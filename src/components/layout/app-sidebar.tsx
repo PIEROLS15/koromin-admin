@@ -7,6 +7,7 @@ import {
   Boxes,
   Contact,
   LayoutDashboard,
+  Layers,
   PackageSearch,
   Receipt,
   ShieldCheck,
@@ -39,6 +40,7 @@ const operacion: NavItem[] = [
 
 const gestion: NavItem[] = [
   { title: "Animes / Categorías", url: "/animes", icon: Sparkles, permission: "products.manage" },
+  { title: "Tipos de producto", url: "/tipos-producto", icon: Layers, permission: "products.manage" },
   { title: "Proveedores", url: "/proveedores", icon: Truck, permission: "orders.manage" },
   { title: "Inversionistas", url: "/inversionistas", icon: Users, permission: "finance.view" },
   { title: "Usuarios", url: "/usuarios", icon: ShieldCheck, permission: "users.manage" },

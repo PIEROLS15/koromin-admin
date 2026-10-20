@@ -8,30 +8,109 @@ import { offsetFor, type ListParams } from "@/server/shared/pagination";
 
 export async function getProductList(params: ListParams) {
   const where = params.q ? { name: { contains: params.q, mode: "insensitive" as const } } : undefined;
-  const [rows, total] = await Promise.all([
+  const [products, total] = await Promise.all([
     prisma.product.findMany({
       where,
       orderBy: { name: "asc" },
       skip: offsetFor(params),
       take: params.pageSize,
-      include: { productType: true, franchise: true, category: true },
+      select: {
+        id: true,
+        name: true,
+        salePrice: true,
+        active: true,
+        manufacturer: true,
+        imageUrl: true,
+        description: true,
+        franchiseId: true,
+        productTypeId: true,
+        franchise: { select: { name: true } },
+        productType: { select: { name: true } },
+        mangaDetail: { select: { publisher: true } },
+        _count: { select: { orderItems: true, saleItems: true } },
+      },
     }),
     prisma.product.count({ where }),
   ]);
 
+  const productIds = products.map((product) => product.id);
+  const units = productIds.length
+    ? await prisma.inventoryUnit.findMany({
+        where: { productId: { in: productIds } },
+        select: { productId: true, status: true },
+      })
+    : [];
+
+  const unitStats = new Map<string, { stock: number; sold: number; total: number }>();
+  for (const unit of units) {
+    let entry = unitStats.get(unit.productId);
+    if (!entry) {
+      entry = { stock: 0, sold: 0, total: 0 };
+      unitStats.set(unit.productId, entry);
+    }
+    entry.total += 1;
+    if (unit.status === InventoryStatus.IN_STOCK) entry.stock += 1;
+    else if (unit.status === InventoryStatus.SOLD) entry.sold += 1;
+  }
+
   return {
-    rows: rows.map((product) => ({
-      id: product.id,
-      name: product.name,
-      salePrice: product.salePrice.toNumber(),
-      productType: product.productType.name,
-      franchise: product.franchise.name,
-      category: product.category?.name ?? null,
-    })),
+    rows: products.map((product) => {
+      const u = unitStats.get(product.id) ?? { stock: 0, sold: 0, total: 0 };
+      return {
+        id: product.id,
+        name: product.name,
+        subtitle: product.mangaDetail?.publisher ?? product.manufacturer ?? null,
+        franchiseId: product.franchiseId,
+        franchise: product.franchise.name,
+        productTypeId: product.productTypeId,
+        productType: product.productType.name,
+        manufacturer: product.manufacturer,
+        salePrice: product.salePrice.toNumber(),
+        imageUrl: product.imageUrl,
+        description: product.description,
+        stock: u.stock,
+        sold: u.sold,
+        hasRelations: product._count.orderItems > 0 || product._count.saleItems > 0 || u.total > 0,
+      };
+    }),
     total,
     page: params.page,
     pageSize: params.pageSize,
   };
+}
+
+export type ProductOptions = {
+  franchises: Array<{ id: string; name: string; active: boolean }>;
+  productTypes: Array<{ id: string; name: string; active: boolean }>;
+};
+
+export async function getProductOptions(): Promise<ProductOptions> {
+  const [franchises, productTypes] = await Promise.all([
+    prisma.franchise.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true, active: true } }),
+    prisma.productType.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true, active: true } }),
+  ]);
+  return { franchises, productTypes };
+}
+
+export type ProductTypeRow = {
+  id: string;
+  name: string;
+  active: boolean;
+  products: number;
+};
+
+export async function getProductTypeList(): Promise<ProductTypeRow[]> {
+  const productTypes = await prisma.productType.findMany({
+    orderBy: { name: "asc" },
+    include: { _count: { select: { products: true } } },
+  });
+
+  return productTypes.map((type) => ({
+    id: type.id,
+    name: type.name,
+    active: type.active,
+    products: type._count.products,
+  }));
 }
 
 export async function getCustomerList(params: ListParams) {

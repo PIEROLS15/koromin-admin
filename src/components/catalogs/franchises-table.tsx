@@ -42,19 +42,19 @@ type FranchiseRow = {
 
 type DialogState = { mode: "create" } | { mode: "edit"; franchise: FranchiseRow } | null;
 
-type DeleteBlock = { kind: "active" | "sales" | "products"; message: string };
+type BlockState = { row: FranchiseRow; title: string; message: string; canToggle?: boolean };
 
-function deleteBlockReason(row: FranchiseRow): DeleteBlock | null {
-  if (row.active) return { kind: "active", message: "Debes desactivarlo primero para poder eliminarlo." };
-  if (row.sold > 0) return { kind: "sales", message: "Está relacionado a ventas; no se puede eliminar." };
-  if (row.products > 0) return { kind: "products", message: "Tiene productos asociados; desactívalo en su lugar." };
+function deleteBlockReason(row: FranchiseRow): Omit<BlockState, "row"> | null {
+  if (row.products > 0) return { title: "No se puede eliminar", message: "Tiene productos asociados; no se puede eliminar." };
+  if (row.sold > 0) return { title: "No se puede eliminar", message: "Está relacionado a ventas; no se puede eliminar." };
+  if (row.active) return { title: "No se puede eliminar", message: "Debes desactivarlo primero para poder eliminarlo.", canToggle: true };
   return null;
 }
 
 export function FranchisesManager({ rows }: { rows: FranchiseRow[] }) {
   const [dialog, setDialog] = useState<DialogState>(null);
   const [confirmDelete, setConfirmDelete] = useState<FranchiseRow | null>(null);
-  const [blocked, setBlocked] = useState<(DeleteBlock & { row: FranchiseRow }) | null>(null);
+  const [blocked, setBlocked] = useState<BlockState | null>(null);
   const [name, setName] = useState("");
   const [active, setActive] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -157,7 +157,15 @@ export function FranchisesManager({ rows }: { rows: FranchiseRow[] }) {
               <Pencil className="size-4" />
               Editar
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleToggle(row)}>
+            <DropdownMenuItem
+              onClick={() => {
+                if (row.products > 0) {
+                  setBlocked({ row, title: "No se puede desactivar", message: "Tiene productos asociados; no se puede desactivar." });
+                  return;
+                }
+                void handleToggle(row);
+              }}
+            >
               <Power className="size-4" />
               {row.active ? "Desactivar" : "Activar"}
             </DropdownMenuItem>
@@ -178,6 +186,8 @@ export function FranchisesManager({ rows }: { rows: FranchiseRow[] }) {
       ),
     },
   ];
+
+  const editToggleBlocked = dialog?.mode === "edit" && dialog.franchise.products > 0;
 
   return (
     <div>
@@ -227,9 +237,11 @@ export function FranchisesManager({ rows }: { rows: FranchiseRow[] }) {
             <div className="flex items-center justify-between rounded-lg border p-3">
               <div>
                 <p className="text-sm font-medium">Activo</p>
-                <p className="text-xs text-muted-foreground">Los inactivos no se sugieren al crear productos.</p>
+                <p className="text-xs text-muted-foreground">
+                  {editToggleBlocked ? "Tiene productos asociados; no se puede desactivar." : "Los inactivos no se sugieren al crear productos."}
+                </p>
               </div>
-              <Switch checked={active} onCheckedChange={setActive} aria-label="Activo" />
+              <Switch checked={active} onCheckedChange={setActive} disabled={editToggleBlocked} aria-label="Activo" />
             </div>
           </div>
           <DialogFooter>
@@ -246,11 +258,11 @@ export function FranchisesManager({ rows }: { rows: FranchiseRow[] }) {
       <Dialog open={!!blocked} onOpenChange={(open) => !open && setBlocked(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>No se puede eliminar</DialogTitle>
+            <DialogTitle>{blocked?.title}</DialogTitle>
             <DialogDescription>{blocked?.message}</DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            {blocked?.kind === "active" ? (
+            {blocked?.canToggle ? (
               <>
                 <Button variant="outline" onClick={() => setBlocked(null)}>
                   Entendido
